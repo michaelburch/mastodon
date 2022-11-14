@@ -1,15 +1,15 @@
 {{- if .Values.autoscaling.enabled }}
-apiVersion: autoscaling/v2beta1
+apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "mastodon.fullname" . }}
+  name: {{ include "mastodon.fullname" . }}-sidekiq
   labels:
     {{- include "mastodon.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "mastodon.fullname" . }}
+    name: {{ include "mastodon.fullname" . }}-sidekiq
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:
@@ -17,12 +17,49 @@ spec:
     - type: Resource
       resource:
         name: cpu
-        targetAverageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
   {{- end }}
   {{- if .Values.autoscaling.targetMemoryUtilizationPercentage }}
     - type: Resource
       resource:
         name: memory
-        targetAverageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}
+  {{- end }}
+{{- end }}
+---
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "mastodon.fullname" . }}-web
+  labels:
+    {{- include "mastodon.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "mastodon.fullname" . }}-web
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+  {{- if .Values.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{- if .Values.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}
   {{- end }}
 {{- end }}
